@@ -1,0 +1,70 @@
+name: Terraform CI/CD
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ap-northeast-1
+      PROFILE_NAME: devops-training-dev
+      TF_IN_AUTOMATION: 1
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Configure AWS CLI profile
+        run: |
+          mkdir -p ~/.aws
+          cat <<EOF > ~/.aws/credentials
+            [${{ env.PROFILE_NAME }}]
+            aws_access_key_id = ${{ secrets.AWS_ACCESS_KEY_ID }}
+            aws_secret_access_key = ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws_session_token = ${{ secrets.AWS_SESSION_TOKEN }}
+          EOF
+
+      - name: Install Trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin
+
+      - name: Security Scan with Trivy
+        run: trivy fs --exit-code 1 --severity HIGH,CRITICAL aws
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.13.3
+
+      - name: Create tfvars file
+        run: |
+          cat <<EOF > aws/terraform/envs/dev/terraform.dev.tfvars
+            project = "devops-training"
+            env     = "dev"
+            region  = "ap-northeast-1"
+          EOF
+
+      - name: Terraform Init, Plan & Apply
+        run: |
+          cd aws
+          make symlink e=dev s=database
+          make init e=dev s=database
+          # make plan e=dev s=database
+          # make apply_auto_approve e=dev s=database
+          make symlink e=dev s=general
+          make init e=dev s=general
+          # make plan e=dev s=general
+          # make apply_auto_approve e=dev s=general
+          make symlink e=dev s=monitoring
+          make init e=dev s=monitoring
+          # make plan e=dev s=monitoring
+          # make apply_auto_approve e=dev s=monitoring

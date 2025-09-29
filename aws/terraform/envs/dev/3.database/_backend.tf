@@ -10,7 +10,7 @@ terraform {
 
   backend "s3" {
     profile        = "devops-training-dev"
-    bucket         = "devops-training-dev-iac-state"
+    bucket         = "devops-training-dev-project-iac-state"
     key            = "3.database/terraform.dev.tfstate"
     region         = "ap-northeast-1"
     encrypt        = true

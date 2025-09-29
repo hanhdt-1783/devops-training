@@ -199,6 +199,10 @@ apply_all: check_env
 		terraform -chdir=$$service apply --var-file=../terraform.$(e).tfvars; \
 	done
 
+.PHONY: apply_auto_approve
+apply: check_env check_service
+	@service_path=$$(ls -d terraform/envs/$(e)/*/ | grep $(s) | head -n 1) && echo Excuting apply: \"$$service_path\" && \
+	terraform -chdir=$$service_path apply --var-file=../terraform.$(e).tfvars -auto-approve
 
 #Plan/Destroy commands
 .PHONY: plan_destroy
