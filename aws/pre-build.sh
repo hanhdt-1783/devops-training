@@ -23,7 +23,7 @@ aws dynamodb create-table \
       --region $region \
       --profile $project-$env
 
-# Create KMS key 
+# Create KMS key
 KMS_KEY_ID=$(aws kms create-key --description "Encrypt tfstate in s3 backend" --query "KeyMetadata.KeyId" --output text --profile $project-$env --region $region)
 aws kms create-alias --alias-name alias/$project-$env-iac --target-key-id $KMS_KEY_ID --profile $project-$env --region $region
 KMS_KEY_ARN=$(aws kms describe-key --key-id $KMS_KEY_ID --query "KeyMetadata.Arn" --output text --profile $project-$env --region $region) && echo "Terraform KMS Key ARN: \n" $KMS_KEY_ARN
